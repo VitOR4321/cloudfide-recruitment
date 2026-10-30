@@ -1,0 +1,4 @@
+**
+!test-agent
+!test-agent/**
+test-agent/**/__pycache__

@@ -1,8 +1,13 @@
 # Unit test agent
 
 The application was imported from `cf-recruitment/taskly-app` at
-`9addcc7d6279ea8fd080f069b8d5f5404ffd281c`. Application logic, dependencies and
-coverage exclusions are unchanged. The backend Dockerfile assigns copied source
+`9addcc7d6279ea8fd080f069b8d5f5404ffd281c`. Backend behavior and coverage exclusions
+are unchanged. The frontend now explains when status filtering hides a task and
+uses a recognizable checkbox tick. Playwright is a pinned development dependency
+for browser regression tests. Vite, Vitest and Storybook were updated within their
+existing major versions to fix reported development-tool vulnerabilities; the
+follow-up npm audit reports zero vulnerabilities. Runtime dependencies are unchanged.
+The backend Dockerfile assigns copied source
 to its runtime user so restrictive host file permissions do not prevent startup.
 New tests cover HTTP failures and cancellation,
 query caches, filtering, notification timers, CRUD, validation, database cleanup,
@@ -51,6 +56,9 @@ Enable GitHub Actions and add the repository Actions secret `TEST_AGENT_API_KEY`
 with access to the OpenAI Responses API. Optionally set the repository variable
 `TEST_AGENT_MODEL`; the default is `gpt-4.1`. Never commit the key or place it in
 an issue, PR description or workflow file.
+This is an OpenAI API key from https://platform.openai.com/api-keys, not a GitHub
+token or a ChatGPT subscription. OpenAI API billing is separate. Application and
+unit/browser tests work without this secret; only model generation requires it.
 
 Opening, updating or reopening a PR starts the workflow. Marking a draft ready
 also starts it. Fork PRs, drafts and Dependabot PRs run baseline checks but skip
@@ -89,11 +97,11 @@ Measured locally on Python 3.12 and Node 24:
 | Suite | Original tests | Current tests | Original line coverage | Current line coverage |
 | --- | ---: | ---: | ---: | ---: |
 | Backend | 21 | 56 | 44.14% | 100% |
-| Frontend | 18 | 47 | 47.68% | 80.79% |
+| Frontend | 18 | 52 | 47.68% | 86.45% |
 
 All application tests pass, as do the production frontend build, frontend format
 check and actionlint validation. Backend branch coverage is 100%; frontend branch
-coverage is 74.45%. These are unit-test results under the original coverage scope,
+coverage is 82.55%. These are unit-test results under the original coverage scope,
 which excludes frontend design-system code and backend models/schemas, among
 other files. They do not establish PostgreSQL or browser end-to-end coverage.
 
@@ -104,14 +112,21 @@ passed. The temporary smoke-test task was deleted. Cloud-only build overrides
 mounted the session CA for package downloads without changing TLS verification;
 these overrides are outside the repository. Windows startup instructions are in
 README.md; this does not mean the app has been launched on the user's computer.
+Five Chromium scenarios in `frontend/e2e/tasks.spec.ts` additionally pass against
+the real stack. They verify completion without disappearance under All statuses,
+filter explanations, failed saves, CRUD, validation, reload persistence, search
+and sorting. `application-checks.yml` runs unit checks and these browser checks
+on main pushes and pull requests, without model credentials.
 
-There are also 13 controller tests, run with
+There are also 18 controller and verification tests, run with
 `python3 -m unittest discover -s test-agent/tests -v`. One integration example
 creates a temporary Git repository, changes a doubling function, feeds a recorded
 model-tool exchange to the real controller, loads analyze-changes, verify-tests
 and backend-tests, checks the patch, applies it and executes two passing tests
 for zero and negative inputs. Another verifies that a documentation change skips
-the model. Other cases exercise path restrictions, commit binding and budgets.
+the model. Other cases exercise path restrictions, commit binding, budgets,
+credential removal, exit status propagation, stale results and zero/all-skipped
+test runs. None of those invalid verification outcomes can produce a passing report.
 
 The recorded model response is an offline test fixture, not evidence of a live
 OpenAI or GitHub run. This environment could read Git repositories, but its GitHub
@@ -120,6 +135,26 @@ public visibility check has been completed here. Those remain to be demonstrated
 after repository access and the Actions secret are available.
 
 ## Limits and production follow-up
+
+Assignment audit:
+
+| Requirement | Status |
+| --- | --- |
+| Own public GitHub repository and imported application | Done |
+| Missing unit tests and better coverage on both sides | Done locally; measurements above |
+| Custom agent and reusable skills used by the controller | Implemented; controller contract tests pass |
+| Automatic PR analysis, test proposals and verification | Implemented; a live model-backed PR run remains unverified |
+| Results available in the PR context | Check summaries and artifacts implemented; needs a real PR run |
+| Short technical documentation and example | Included; the controller example is explicitly offline |
+| Optional example feature PR and complete hosted demonstration | Pending |
+
+The assignment cannot yet be called fully demonstrated. The remaining evidence
+requires a real PR and a working repository Actions secret `TEST_AGENT_API_KEY`.
+The cloud machine's GitHub API is blocked by its network policy; `api.github.com`
+was proposed in the environment configuration draft but is not yet allowed in
+the running instance. Git transport works, so code can still be published.
+Review/save the network settings to enable PR creation and run inspection from
+this environment. The secret belongs in GitHub Actions settings, never in chat.
 
 The workflow proposes tests and validates them once; it does not automatically
 repair failures or alter application code. A failed baseline test run is supplied

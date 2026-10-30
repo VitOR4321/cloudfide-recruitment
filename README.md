@@ -50,6 +50,58 @@ Application: http://localhost:8080. API: http://localhost:8000/docs.
 docker compose down
 ```
 
+## Tests with Docker
+
+From the project root, run all backend, frontend and agent unit tests:
+
+```sh
+docker compose -f compose.test.yaml up --build --abort-on-container-failure
+```
+
+This uses separate test images and prints results and coverage in the terminal.
+It needs no host Python or Node installation, API key or application database.
+The test project publishes no ports, so your local `WEB_PORT` is unaffected.
+The command exits with a failure code if a test container fails. To remove the
+stopped test containers, run `docker compose -f compose.test.yaml down`.
+
+For one suite only:
+
+```sh
+docker compose -f compose.test.yaml run --build --rm backend-tests
+docker compose -f compose.test.yaml run --build --rm frontend-tests
+docker compose -f compose.test.yaml run --build --rm agent-tests
+```
+
+The production images contain the built application, not the test sources.
+
+## Browser tests
+
+Start the application first. With Node installed, run from `frontend`:
+
+```sh
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+The default target is `http://127.0.0.1:8080`. For a custom local port in
+PowerShell, set the URL before running the tests:
+
+```powershell
+$env:TASKLY_BASE_URL = 'http://localhost:8082'
+npm run test:e2e
+```
+
+Tests cover completion and reopening, filters, failed saves, validation, creation,
+editing, deletion, persistence after reload, searching and sorting. They create
+uniquely named tasks and delete only those tasks at the end. Reports are written
+to `frontend/playwright-report`; failure traces go to `frontend/test-results`.
+The Application checks workflow runs the same scenarios against a fresh CI stack.
+
+Completing a task keeps it visible under **All statuses**. Under **To do**, it
+leaves the current view because it is completed; choose All statuses or Completed
+to see it. The interface now explains this and uses a visible check mark.
+
 ## Frontend
 
 Installation:

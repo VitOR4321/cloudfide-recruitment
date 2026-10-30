@@ -69,7 +69,12 @@ def verify(root: Path, output: Path, baseline: Path | None = None) -> int:
     if os.getenv("GITHUB_STEP_SUMMARY"):
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as stream:
             stream.write(text)
-    counts_valid = all(summary["tests"].get(name, {}).get("tests", 0) > 0 for name in ("backend", "frontend"))
+    counts_valid = all(
+        counts.get("tests", 0) > counts.get("skipped", 0)
+        and counts.get("failures", 0) == 0
+        and counts.get("errors", 0) == 0
+        for counts in (summary["tests"].get(name, {}) for name in ("backend", "frontend"))
+    )
     return 0 if counts_valid and all(result["exit_code"] == 0 for result in results) else 1
 
 

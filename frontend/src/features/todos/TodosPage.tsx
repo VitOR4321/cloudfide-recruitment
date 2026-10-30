@@ -31,11 +31,19 @@ export function TodosPage() {
         id: todo.id,
         input: { completed: !todo.completed },
       })
-      notify(
-        saved.completed
-          ? 'Another task complete. Well done!'
-          : 'Task marked as active.',
-      )
+      if (filters.filter === 'active' && saved.completed) {
+        notify('Task completed. It is now hidden by the To do filter.')
+      } else if (filters.filter === 'completed' && !saved.completed) {
+        notify(
+          'Task marked as active. It is now hidden by the Completed filter.',
+        )
+      } else {
+        notify(
+          saved.completed
+            ? 'Another task complete. Well done!'
+            : 'Task marked as active.',
+        )
+      }
     } catch {
       // Display the mutation error in the page alert.
     }

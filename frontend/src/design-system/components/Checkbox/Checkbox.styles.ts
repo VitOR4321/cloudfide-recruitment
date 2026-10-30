@@ -13,6 +13,9 @@ export const Wrapper = styled.label`
 export const HiddenInput = styled.input`
   position: absolute;
   opacity: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
 
   &:focus-visible + span {
     outline: 3px solid rgba(31, 122, 140, 0.2);
@@ -33,6 +36,7 @@ export const HiddenInput = styled.input`
 export const Box = styled.span`
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
   border-radius: 6px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   display: inline-flex;
@@ -44,10 +48,11 @@ export const Box = styled.span`
 
   &::after {
     content: '';
-    width: 8px;
-    height: 8px;
-    background: #fff;
-    border-radius: 2px;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: translateY(-1px) rotate(45deg);
     opacity: 0;
     transition: opacity 0.2s ease;
   }

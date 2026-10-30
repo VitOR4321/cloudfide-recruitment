@@ -1,0 +1,16 @@
+name: taskly-tests
+
+services:
+  backend-tests:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+  frontend-tests:
+    build:
+      context: ./frontend
+      target: build
+    command: npm run test:coverage
+  agent-tests:
+    build:
+      context: .
+      dockerfile: test-agent/Dockerfile
