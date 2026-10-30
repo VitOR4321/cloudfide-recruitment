@@ -1,8 +1,10 @@
 # Unit test agent
 
 The application was imported from `cf-recruitment/taskly-app` at
-`9addcc7d6279ea8fd080f069b8d5f5404ffd281c`. Application code, dependencies and
-coverage exclusions are unchanged. New tests cover HTTP failures and cancellation,
+`9addcc7d6279ea8fd080f069b8d5f5404ffd281c`. Application logic, dependencies and
+coverage exclusions are unchanged. The backend Dockerfile assigns copied source
+to its runtime user so restrictive host file permissions do not prevent startup.
+New tests cover HTTP failures and cancellation,
 query caches, filtering, notification timers, CRUD, validation, database cleanup,
 configuration, health and application startup.
 
@@ -94,6 +96,14 @@ check and actionlint validation. Backend branch coverage is 100%; frontend branc
 coverage is 74.45%. These are unit-test results under the original coverage scope,
 which excludes frontend design-system code and backend models/schemas, among
 other files. They do not establish PostgreSQL or browser end-to-end coverage.
+
+The Docker stack was also built and exercised in the cloud with PostgreSQL:
+frontend HTML and JavaScript, nginx API forwarding, database health, listing,
+creating, reading, updating and deleting a task, and a 404 after deletion all
+passed. The temporary smoke-test task was deleted. Cloud-only build overrides
+mounted the session CA for package downloads without changing TLS verification;
+these overrides are outside the repository. Windows startup instructions are in
+README.md; this does not mean the app has been launched on the user's computer.
 
 There are also 13 controller tests, run with
 `python3 -m unittest discover -s test-agent/tests -v`. One integration example

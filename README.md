@@ -6,6 +6,34 @@ See [SOLUTION.md](SOLUTION.md) for the unit test agent, reusable skills and PR w
 
 ## Setup
 
+### Windows (drive F)
+
+Install Git and Docker Desktop, start Docker Desktop with Linux containers, then
+run in PowerShell. Use a new destination folder; cloning will not overwrite an
+existing project.
+
+```powershell
+git clone https://github.com/VitOR4321/cloudfide-recruitment.git F:\cloudfide-recruitment
+if ($LASTEXITCODE -ne 0) { throw 'Repository clone failed.' }
+Set-Location F:\cloudfide-recruitment
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+docker compose up --build -d --wait
+if ($LASTEXITCODE -ne 0) { throw 'Application startup failed. Run docker compose logs.' }
+Start-Process 'http://localhost:8080'
+```
+
+The code is in `F:\cloudfide-recruitment`: `frontend/src` contains the interface,
+`backend/app` the API, `test-agent` the agent and skills, and `.github/workflows`
+the PR automation. Additional backend tests are in `backend/tests`; frontend
+tests are beside their source files. Open this folder in your editor to review
+the code. No host Python or Node installation is needed for the Docker setup.
+
+The API documentation is available at http://localhost:8000/docs. To stop the
+application, run `docker compose down` from the project folder. This preserves
+the database volume.
+
+### Native development
+
 ```sh
 cp .env.example .env
 ```
