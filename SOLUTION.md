@@ -1,5 +1,12 @@
 # Unit test agent
 
+This example branch adds a Reset filters button. It appears when search, status
+or sorting differs from the defaults and restores all three defaults in one
+click. Open a PR from `example/reset-filters` to `main` after configuring the
+Actions secret to demonstrate the agent's decision and test proposal for this
+new behavior. Existing tests are retained; new regression tests are left for
+the agent to propose and verify in that PR.
+
 The application was imported from `cf-recruitment/taskly-app` at
 `9addcc7d6279ea8fd080f069b8d5f5404ffd281c`. Backend behavior and coverage exclusions
 are unchanged. The frontend now explains when status filtering hides a task and
