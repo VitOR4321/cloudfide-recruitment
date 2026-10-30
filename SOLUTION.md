@@ -129,10 +129,12 @@ credential removal, exit status propagation, stale results and zero/all-skipped
 test runs. None of those invalid verification outcomes can produce a passing report.
 
 The recorded model response is an offline test fixture, not evidence of a live
-OpenAI or GitHub run. This environment could read Git repositories, but its GitHub
-API request returned Forbidden. No hosted workflow run, example GitHub PR or
-public visibility check has been completed here. Those remain to be demonstrated
-after repository access and the Actions secret are available.
+OpenAI-backed agent run. Separately, the real GitHub-hosted Application checks
+run [41143768300](https://github.com/VitOR4321/cloudfide-recruitment/actions/runs/41143768300)
+completed successfully for commit `dda8ee4`: both the unit and browser jobs passed.
+The public run page confirmed this independently of the cloud checks.
+The GitHub API still returns Forbidden from this machine. A model-backed agent
+PR run remains to be demonstrated after the Actions secret and PR are available.
 
 ## Limits and production follow-up
 
@@ -146,7 +148,7 @@ Assignment audit:
 | Automatic PR analysis, test proposals and verification | Implemented; a live model-backed PR run remains unverified |
 | Results available in the PR context | Check summaries and artifacts implemented; needs a real PR run |
 | Short technical documentation and example | Included; the controller example is explicitly offline |
-| Optional example feature PR and complete hosted demonstration | Pending |
+| Optional example feature PR and complete hosted demonstration | Feature branch prepared; PR and model run pending |
 
 The assignment cannot yet be called fully demonstrated. The remaining evidence
 requires a real PR and a working repository Actions secret `TEST_AGENT_API_KEY`.
@@ -155,6 +157,12 @@ was proposed in the environment configuration draft but is not yet allowed in
 the running instance. Git transport works, so code can still be published.
 Review/save the network settings to enable PR creation and run inspection from
 this environment. The secret belongs in GitHub Actions settings, never in chat.
+
+The branch `example/reset-filters` adds a Reset filters button without changing
+main. It resets search, status and sort order. Existing checks pass on that
+branch; the agent should decide which tests to add for the new behavior in the
+PR. After adding the secret, open the prepared comparison:
+https://github.com/VitOR4321/cloudfide-recruitment/compare/main...example/reset-filters?expand=1
 
 The workflow proposes tests and validates them once; it does not automatically
 repair failures or alter application code. A failed baseline test run is supplied
