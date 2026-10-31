@@ -147,8 +147,10 @@ helper props and invented a sort value. The two generated tests failed and
 TypeScript found three errors. This was a generated-test defect, not an app bug.
 The controller now supplies the missing source context automatically and the
 skills document the relevant conventions. The corrected regression test file
-passed all eight cases and the frontend build locally. A fresh model-backed
-PR run must confirm the controller fix; failures are never hidden or skipped.
+passed all eight cases and the frontend build locally. The fresh model-backed
+PR run [41210834220](https://github.com/VitOR4321/cloudfide-recruitment/actions/runs/41210834220)
+then completed successfully for head `ec36e96`: baseline, propose and verify all
+passed in GitHub Actions. It used the corrected controller from base `1bbc3fd`.
 Failed command output now appears directly in Actions logs and the summary as
 well as artifacts, with command exit statuses preserved.
 
@@ -160,25 +162,23 @@ Assignment audit:
 | --- | --- |
 | Own public GitHub repository and imported application | Done |
 | Missing unit tests and better coverage on both sides | Done locally; measurements above |
-| Custom agent and reusable skills used by the controller | Implemented; controller contract tests pass |
-| Automatic PR analysis, test proposals and verification | Implemented; a live model-backed PR run remains unverified |
-| Results available in the PR context | Check summaries and artifacts implemented; needs a real PR run |
-| Short technical documentation and example | Included; the controller example is explicitly offline |
-| Optional example feature PR and complete hosted demonstration | Feature branch prepared; PR and model run pending |
+| Custom agent and reusable skills used by the controller | Implemented; controller tests and live frontend PR run pass |
+| Automatic PR analysis, test proposals and verification | Live PR #1 completed successfully after the context fix |
+| Results available in the PR context | Check summaries and three artifact groups are attached to the successful run |
+| Technical documentation and example | Includes offline backend fixture and successful live frontend PR evidence |
+| Optional example feature PR and hosted demonstration | PR #1 adds Reset filters; successful run linked above |
 
-The assignment cannot yet be called fully demonstrated. The remaining evidence
-requires a real PR and a working repository Actions secret `TEST_AGENT_API_KEY`.
-The cloud machine's GitHub API is blocked by its network policy; `api.github.com`
-was proposed in the environment configuration draft but is not yet allowed in
-the running instance. Git transport works, so code can still be published.
-Review/save the network settings to enable PR creation and run inspection from
-this environment. The secret belongs in GitHub Actions settings, never in chat.
+The live model-backed example exercises the frontend; the backend generation
+contract is exercised by the offline controller fixture and the backend suite
+runs in every verification job. A second live PR changing backend behavior would
+broaden the demonstration. The model secret works in GitHub Actions. This cloud
+machine's API access remains blocked; public run pages confirmed the result,
+and user-supplied artifacts enabled the original failure analysis.
 
 The branch `example/reset-filters` adds a Reset filters button without changing
 main. It resets search, status and sort order. Existing checks pass on that
-branch; the agent should decide which tests to add for the new behavior in the
-PR. After adding the secret, open the prepared comparison:
-https://github.com/VitOR4321/cloudfide-recruitment/compare/main...example/reset-filters?expand=1
+branch. The demonstration is available at:
+https://github.com/VitOR4321/cloudfide-recruitment/pull/1
 
 The workflow proposes tests and validates them once; it does not automatically
 repair failures or alter application code. A failed baseline test run is supplied
@@ -193,4 +193,3 @@ add per-repository spend quotas and retry/backoff for transient model failures,
 require approval before generating for external contributions, and add mutation
 testing or changed-line coverage checks. A bounded repair loop should receive
 sanitized test failures through the same separation of credentials and execution.
-An example feature PR with a real hosted run is the next demonstration step.
