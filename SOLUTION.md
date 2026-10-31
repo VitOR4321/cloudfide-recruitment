@@ -33,6 +33,12 @@ from `test-agent/skills/*/SKILL.md`: analyze-changes and verify-tests always app
 to source changes; frontend-tests and backend-tests are selected by changed paths.
 Each proposal records the skills used and files inspected in `decision.json`.
 Documentation-only changes skip the model entirely.
+Before calling the model, the controller supplies changed implementation,
+neighboring tests, domain types and test helpers as bounded source context.
+`context_files` records those supplied files; `reads` records additional model
+tool calls. Existing mock/provider setup and tests must be retained when updating
+a file. The frontend skill explicitly covers typed props, Vitest imports,
+design-system providers and render cleanup.
 
 The workflow in `.github/workflows/unit-test-agent.yml` has three jobs:
 
@@ -125,7 +131,7 @@ filter explanations, failed saves, CRUD, validation, reload persistence, search
 and sorting. `application-checks.yml` runs unit checks and these browser checks
 on main pushes and pull requests, without model credentials.
 
-There are also 18 controller and verification tests, run with
+There are also 21 controller and verification tests, run with
 `python3 -m unittest discover -s test-agent/tests -v`. One integration example
 creates a temporary Git repository, changes a doubling function, feeds a recorded
 model-tool exchange to the real controller, loads analyze-changes, verify-tests
@@ -136,10 +142,22 @@ credential removal, exit status propagation, stale results and zero/all-skipped
 test runs. None of those invalid verification outcomes can produce a passing report.
 
 The recorded model response is an offline test fixture, not evidence of a live
-OpenAI or GitHub run. This environment could read Git repositories, but its GitHub
-API request returned Forbidden. No hosted workflow run, example GitHub PR or
-public visibility check has been completed here. Those remain to be demonstrated
-after repository access and the Actions secret are available.
+OpenAI-backed agent run. Separately, the real GitHub-hosted Application checks
+run [41143768300](https://github.com/VitOR4321/cloudfide-recruitment/actions/runs/41143768300)
+completed successfully for commit `dda8ee4`: both the unit and browser jobs passed.
+The public run page confirmed this independently of the cloud checks.
+The GitHub API still returns Forbidden from this machine. The first live agent
+run on PR #1, [41209576969](https://github.com/VitOR4321/cloudfide-recruitment/actions/runs/41209576969),
+successfully generated a proposal, which verification rejected: the model had
+not read the existing tests, omitted their design-system mocks, used untyped
+helper props and invented a sort value. The two generated tests failed and
+TypeScript found three errors. This was a generated-test defect, not an app bug.
+The controller now supplies the missing source context automatically and the
+skills document the relevant conventions. The corrected regression test file
+passed all eight cases and the frontend build locally. A fresh model-backed
+PR run must confirm the controller fix; failures are never hidden or skipped.
+Failed command output now appears directly in Actions logs and the summary as
+well as artifacts, with command exit statuses preserved.
 
 ## Limits and production follow-up
 
@@ -153,7 +171,7 @@ Assignment audit:
 | Automatic PR analysis, test proposals and verification | Implemented; a live model-backed PR run remains unverified |
 | Results available in the PR context | Check summaries and artifacts implemented; needs a real PR run |
 | Short technical documentation and example | Included; the controller example is explicitly offline |
-| Optional example feature PR and complete hosted demonstration | Pending |
+| Optional example feature PR and complete hosted demonstration | Feature branch prepared; PR and model run pending |
 
 The assignment cannot yet be called fully demonstrated. The remaining evidence
 requires a real PR and a working repository Actions secret `TEST_AGENT_API_KEY`.
@@ -162,6 +180,12 @@ was proposed in the environment configuration draft but is not yet allowed in
 the running instance. Git transport works, so code can still be published.
 Review/save the network settings to enable PR creation and run inspection from
 this environment. The secret belongs in GitHub Actions settings, never in chat.
+
+The branch `example/reset-filters` adds a Reset filters button without changing
+main. It resets search, status and sort order. Existing checks pass on that
+branch; the agent should decide which tests to add for the new behavior in the
+PR. After adding the secret, open the prepared comparison:
+https://github.com/VitOR4321/cloudfide-recruitment/compare/main...example/reset-filters?expand=1
 
 The workflow proposes tests and validates them once; it does not automatically
 repair failures or alter application code. A failed baseline test run is supplied

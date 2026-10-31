@@ -1,4 +1,5 @@
 import argparse
+import html
 import json
 import os
 import subprocess
@@ -21,6 +22,7 @@ def verify(root: Path, output: Path, baseline: Path | None = None) -> int:
         ("build", ["npm", "run", "build"], root / "frontend"),
     ]
     results = []
+    failures = []
     environment = os.environ.copy()
     for name in ("TEST_AGENT_API_KEY", "OPENAI_API_KEY", "GH_TOKEN", "GITHUB_TOKEN"):
         environment.pop(name, None)
@@ -32,6 +34,9 @@ def verify(root: Path, output: Path, baseline: Path | None = None) -> int:
             code, log = 124, "Command exceeded five-minute limit.\n"
         (output / f"{name}.log").write_text(log)
         print(f"{name}: exit {code}", flush=True)
+        if code:
+            print(log[-12000:], flush=True)
+            failures.append((name, log[-12000:]))
         results.append({"name": name, "command": command, "exit_code": code})
     summary = {"checks": results, "coverage": {}, "tests": {}}
     for name in ("backend", "frontend"):
@@ -64,6 +69,8 @@ def verify(root: Path, output: Path, baseline: Path | None = None) -> int:
         before = f"{percentage(previous[name]):.2f}%" if name in previous else "—"
         report.append(f"| {name} | {before} | {percentage(coverage):.2f}% |")
     report += ["", "Full coverage and command output are available in the artifacts."]
+    for name, log in failures:
+        report += ["", f"### {name} failure", "", "<pre>", html.escape(log), "</pre>"]
     text = "\n".join(report) + "\n"
     (output / "summary.md").write_text(text)
     if os.getenv("GITHUB_STEP_SUMMARY"):
