@@ -1,82 +1,35 @@
 # Taskly App
 
-Imported from [cf-recruitment/taskly-app](https://github.com/cf-recruitment/taskly-app)
+React + TypeScript frontend and Python + FastAPI backend with PostgreSQL.
+Based on [cf-recruitment/taskly-app](https://github.com/cf-recruitment/taskly-app)
 at `9addcc7d6279ea8fd080f069b8d5f5404ffd281c`.
-See [SOLUTION.md](SOLUTION.md) for the unit test agent, reusable skills and PR workflow.
 
-## Setup
+See [SOLUTION.md](SOLUTION.md) for the custom test agent, reusable skills and PR workflow.
 
-### Windows (drive F)
+## Run with Docker
 
-Install Git and Docker Desktop, start Docker Desktop with Linux containers, then
-run in PowerShell. Use a new destination folder; cloning will not overwrite an
-existing project.
-
-```powershell
-git clone https://github.com/VitOR4321/cloudfide-recruitment.git F:\cloudfide-recruitment
-if ($LASTEXITCODE -ne 0) { throw 'Repository clone failed.' }
-Set-Location F:\cloudfide-recruitment
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
-docker compose up --build -d --wait
-if ($LASTEXITCODE -ne 0) { throw 'Application startup failed. Run docker compose logs.' }
-Start-Process 'http://localhost:8080'
-```
-
-The code is in `F:\cloudfide-recruitment`: `frontend/src` contains the interface,
-`backend/app` the API, `test-agent` the agent and skills, and `.github/workflows`
-the PR automation. Additional backend tests are in `backend/tests`; frontend
-tests are beside their source files. Open this folder in your editor to review
-the code. No host Python or Node installation is needed for the Docker setup.
-
-The API documentation is available at http://localhost:8000/docs. To stop the
-application, run `docker compose down` from the project folder. This preserves
-the database volume.
-
-### Native development
-
-```sh
-cp .env.example .env
-```
-
-## Docker
+Requirements: Docker with Compose. Copy `.env.example` to `.env`, then run:
 
 ```sh
 docker compose up --build -d --wait
 ```
 
-Application: http://localhost:8080. API: http://localhost:8000/docs.
+Application: http://localhost:8080. API documentation: http://localhost:8000/docs.
+Configure ports in `.env`. Stop with `docker compose down`; database data is retained.
 
-```sh
-docker compose down
-```
+## Tests
 
-## Tests with Docker
-
-From the project root, run all backend, frontend and agent unit tests:
+Run backend, frontend and agent unit tests without installing Python or Node:
 
 ```sh
 docker compose -f compose.test.yaml up --build --abort-on-container-failure
 ```
 
-This uses separate test images and prints results and coverage in the terminal.
-It needs no host Python or Node installation, API key or application database.
-The test project publishes no ports, so your local `WEB_PORT` is unaffected.
-The command exits with a failure code if a test container fails. To remove the
-stopped test containers, run `docker compose -f compose.test.yaml down`.
+Results and coverage are printed in the terminal. These tests require no API key
+or running database. Remove stopped test containers with
+`docker compose -f compose.test.yaml down`.
 
-For one suite only:
-
-```sh
-docker compose -f compose.test.yaml run --build --rm backend-tests
-docker compose -f compose.test.yaml run --build --rm frontend-tests
-docker compose -f compose.test.yaml run --build --rm agent-tests
-```
-
-The production images contain the built application, not the test sources.
-
-## Browser tests
-
-Start the application first. With Node installed, run from `frontend`:
+For browser tests, start the application and run from `frontend` with Node installed:
 
 ```sh
 npm ci
@@ -84,83 +37,30 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The default target is `http://127.0.0.1:8080`. For a custom local port in
-PowerShell, set the URL before running the tests:
+Set `TASKLY_BASE_URL` to test a different address. Browser reports are written to
+`frontend/playwright-report`. Tests create and clean up their own tasks.
 
-```powershell
-$env:TASKLY_BASE_URL = 'http://localhost:8082'
-npm run test:e2e
-```
+## Development
 
-Tests cover completion and reopening, filters, failed saves, validation, creation,
-editing, deletion, persistence after reload, searching and sorting. They create
-uniquely named tasks and delete only those tasks at the end. Reports are written
-to `frontend/playwright-report`; failure traces go to `frontend/test-results`.
-The Application checks workflow runs the same scenarios against a fresh CI stack.
+Use Node 24 and Python 3.12 for native development.
 
-Completing a task keeps it visible under **All statuses**. Under **To do**, it
-leaves the current view because it is completed; choose All statuses or Completed
-to see it. The interface now explains this and uses a visible check mark.
-
-## Frontend
-
-Installation:
+Frontend, from `frontend`:
 
 ```sh
-cd frontend
 npm ci
-```
-
-Development — http://localhost:5173:
-
-```sh
 npm run dev
 ```
 
-Storybook — http://localhost:6006:
+Run `npm test` for unit tests, `npm run test:coverage` for coverage and
+`npm run storybook` for the component library.
+
+Backend: start PostgreSQL with `docker compose up -d --wait postgres`, then run
+from `backend`:
 
 ```sh
-npm run storybook
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m uvicorn app.main:app --reload
 ```
 
-Tests:
-
-```sh
-npm test
-```
-
-Coverage — `frontend/coverage/index.html`:
-
-```sh
-npm run test:coverage
-```
-
-## Backend
-
-Installation (from the repository root):
-
-```sh
-python3 -m venv backend/.venv
-source backend/.venv/bin/activate
-python -m pip install -r backend/requirements.txt
-```
-
-Development — http://localhost:8000/docs:
-
-```sh
-docker compose up -d --wait postgres
-cd backend
-python -m uvicorn app.main:app --reload
-```
-
-Tests (in `backend`, with `.venv` activated):
-
-```sh
-python -m pytest
-```
-
-Coverage — `backend/coverage/html/index.html`:
-
-```sh
-python -m pytest --cov=app --cov-report=term-missing --cov-report=html
-```
+Run `.venv/bin/python -m pytest --cov=app` from the same directory for tests and coverage.
