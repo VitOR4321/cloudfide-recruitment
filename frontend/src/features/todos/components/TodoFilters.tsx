@@ -1,4 +1,4 @@
-import { Input, Select, Text } from '../../../design-system'
+import { Button, Input, Select, Text } from '../../../design-system'
 import type { Filter, Sort } from '../types'
 
 interface TodoFiltersProps {
@@ -55,6 +55,20 @@ export function TodoFilters({
             : 'Only completed tasks are shown. Marking a task as active hides it from this view.'}
           {' Select All statuses to see every task.'}
         </Text>
+      )}
+      {(filter !== 'all' || search !== '' || sort !== 'newest') && (
+        <div className="row">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              onFilterChange('all')
+              onSearchChange('')
+              onSortChange('newest')
+            }}
+          >
+            Reset filters
+          </Button>
+        </div>
       )}
     </>
   )
