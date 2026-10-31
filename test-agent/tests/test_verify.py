@@ -33,7 +33,7 @@ class VerificationTests(unittest.TestCase):
                     f'<testsuites><testsuite tests="{tests}" skipped="{skipped}" '
                     f'failures="{failures}" errors="0" /></testsuites>'
                 )
-            return subprocess.CompletedProcess(command, backend_exit if suite == "backend" else 0, "test output", "")
+            return subprocess.CompletedProcess(command, backend_exit if suite == "backend" else 0, "test output <error>", "")
 
         with patch("verify.subprocess.run", side_effect=run), patch.dict("os.environ", {
             "TEST_AGENT_API_KEY": "fixture", "OPENAI_API_KEY": "fixture",
@@ -54,6 +54,10 @@ class VerificationTests(unittest.TestCase):
         backend = next(check for check in result["checks"] if check["name"] == "backend")
         self.assertEqual(backend["exit_code"], 1)
         self.assertTrue((self.output / "frontend.log").exists())
+        summary = (self.output / "summary.md").read_text()
+        self.assertIn("backend failure", summary)
+        self.assertIn("test output &lt;error&gt;", summary)
+        self.assertNotIn("test output <error>", summary)
 
     def test_zero_or_all_skipped_tests_do_not_count_as_verification(self):
         for tests, skipped in [(0, 0), (2, 2)]:

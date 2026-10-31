@@ -78,6 +78,38 @@ def request_model(messages: list, instructions: str, model: str) -> dict:
     return result
 
 
+def collect_context(root: Path, changed: list[str]) -> dict[str, str]:
+    names = list(changed)
+    for name in changed:
+        path = Path(name)
+        if name.startswith("frontend/"):
+            names.extend(path.with_name(f"{path.stem}.test{suffix}").as_posix() for suffix in (".ts", ".tsx"))
+        elif name.startswith("backend/app/"):
+            relative = path.relative_to("backend/app")
+            names.append((Path("backend/tests") / relative.parent / f"test_{path.stem}.py").as_posix())
+    if any(name.startswith("frontend/") for name in changed):
+        names.extend([
+            "frontend/src/features/todos/types.ts",
+            "frontend/src/design-system/mocks.tsx",
+            "frontend/src/app/AppProviders.tsx",
+            "frontend/src/test/setup.ts",
+        ])
+    if any(name.startswith("backend/") for name in changed):
+        names.extend(["backend/tests/conftest.py", "backend/tests/mocks.py"])
+    context = {}
+    total_bytes = 0
+    for name in dict.fromkeys(names):
+        path = safe_path(root, name)
+        if not path.exists():
+            continue
+        size = path.stat().st_size
+        total_bytes += size
+        if size > 40000 or total_bytes > 160000:
+            raise ValueError("Source context exceeds agent limits; split the change")
+        context[name] = path.read_text()
+    return context
+
+
 def generate(root: Path, changed: list[str], diff: str, model: str, baseline: dict | None = None) -> tuple[dict, list[str], list[str]]:
     skills = ["analyze-changes", "verify-tests"]
     if any(name.startswith("frontend/") for name in changed):
@@ -95,6 +127,7 @@ def generate(root: Path, changed: list[str], diff: str, model: str, baseline: di
     messages = [{"role": "user", "content": json.dumps({
         "changed_files": changed, "available_files": available, "untrusted_diff": diff,
         "untrusted_baseline": baseline,
+        "untrusted_context": collect_context(root, changed),
     })}]
     reads = []
     for _ in range(8):
@@ -153,6 +186,7 @@ def prepare(root: Path, base: str, head: str, output: Path, model: str, baseline
         proposal, skills, reads = generate(root, changed, diff, model, evidence)
     proposal.update({"base": base, "head": head, "model": model,
                      "skills": skills, "reads": reads, "changed_files": changed})
+    proposal["context_files"] = list(collect_context(root, changed)) if changed else []
     output.mkdir(parents=True, exist_ok=True)
     (output / "proposal.json").write_text(json.dumps(proposal, indent=2) + "\n")
     patch = []
@@ -171,6 +205,7 @@ def prepare(root: Path, base: str, head: str, output: Path, model: str, baseline
         "## Unit test agent", "", f"Decision: **{proposal['decision']}**", "",
         html.escape(proposal["reason"]), "",
         "Skills: " + ", ".join(skills), "",
+        f"Context files supplied: {len(proposal['context_files'])}; additional tool reads: {len(reads)}.", "",
         f"Proposed test files: {len(proposal['files'])}. See the proposal artifact for the patch and inspection trace.",
     ]) + "\n"
     (output / "summary.md").write_text(summary)

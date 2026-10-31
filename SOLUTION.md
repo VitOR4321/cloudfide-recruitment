@@ -26,6 +26,12 @@ from `test-agent/skills/*/SKILL.md`: analyze-changes and verify-tests always app
 to source changes; frontend-tests and backend-tests are selected by changed paths.
 Each proposal records the skills used and files inspected in `decision.json`.
 Documentation-only changes skip the model entirely.
+Before calling the model, the controller supplies changed implementation,
+neighboring tests, domain types and test helpers as bounded source context.
+`context_files` records those supplied files; `reads` records additional model
+tool calls. Existing mock/provider setup and tests must be retained when updating
+a file. The frontend skill explicitly covers typed props, Vitest imports,
+design-system providers and render cleanup.
 
 The workflow in `.github/workflows/unit-test-agent.yml` has three jobs:
 
@@ -118,7 +124,7 @@ filter explanations, failed saves, CRUD, validation, reload persistence, search
 and sorting. `application-checks.yml` runs unit checks and these browser checks
 on main pushes and pull requests, without model credentials.
 
-There are also 18 controller and verification tests, run with
+There are also 21 controller and verification tests, run with
 `python3 -m unittest discover -s test-agent/tests -v`. One integration example
 creates a temporary Git repository, changes a doubling function, feeds a recorded
 model-tool exchange to the real controller, loads analyze-changes, verify-tests
@@ -133,8 +139,18 @@ OpenAI-backed agent run. Separately, the real GitHub-hosted Application checks
 run [41143768300](https://github.com/VitOR4321/cloudfide-recruitment/actions/runs/41143768300)
 completed successfully for commit `dda8ee4`: both the unit and browser jobs passed.
 The public run page confirmed this independently of the cloud checks.
-The GitHub API still returns Forbidden from this machine. A model-backed agent
-PR run remains to be demonstrated after the Actions secret and PR are available.
+The GitHub API still returns Forbidden from this machine. The first live agent
+run on PR #1, [41209576969](https://github.com/VitOR4321/cloudfide-recruitment/actions/runs/41209576969),
+successfully generated a proposal, which verification rejected: the model had
+not read the existing tests, omitted their design-system mocks, used untyped
+helper props and invented a sort value. The two generated tests failed and
+TypeScript found three errors. This was a generated-test defect, not an app bug.
+The controller now supplies the missing source context automatically and the
+skills document the relevant conventions. The corrected regression test file
+passed all eight cases and the frontend build locally. A fresh model-backed
+PR run must confirm the controller fix; failures are never hidden or skipped.
+Failed command output now appears directly in Actions logs and the summary as
+well as artifacts, with command exit statuses preserved.
 
 ## Limits and production follow-up
 

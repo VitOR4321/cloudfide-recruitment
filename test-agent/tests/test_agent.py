@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agent import apply, generate, prepare
+from agent import apply, collect_context, generate, prepare
 from safety import safe_path, validate_proposal
 
 
@@ -102,6 +102,49 @@ class AgentTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 generate(self.root, [], "diff", "model")
 
+    def test_supplies_existing_tests_types_and_mocks_before_any_model_reply(self):
+        source = "frontend/src/features/todos/components/TodoFilters.tsx"
+        existing = "frontend/src/features/todos/components/TodoFilters.test.tsx"
+        files = {
+            source: "export function TodoFilters() { return null }",
+            existing: "vi.mock('../../../design-system'); it('existing behavior', () => {})",
+            "frontend/src/features/todos/types.ts": "export type Sort = 'newest' | 'priority' | 'due'",
+            "frontend/src/design-system/mocks.tsx": "export const Input = mockInput",
+            "frontend/src/test/setup.ts": "afterEach(cleanup)",
+        }
+        for name, content in files.items():
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content)
+        response = {"output": [{"type": "message", "content": [
+            {"type": "output_text", "text": json.dumps(self.proposal)},
+        ]}]}
+        with patch("agent.git", return_value="\n".join(files)), \
+             patch("agent.request_model", return_value=response) as model:
+            generate(self.root, [source], "diff", "model")
+        context = json.loads(model.call_args.args[0][0]["content"])["untrusted_context"]
+        self.assertEqual(context, files)
+
+    def test_rejects_symlinked_context_before_reading_or_calling_model(self):
+        source = self.root / "frontend/src/App.tsx"
+        source.parent.mkdir(parents=True)
+        with tempfile.TemporaryDirectory() as directory:
+            secret = Path(directory) / "secret.tsx"
+            secret.write_text("must not be read")
+            source.symlink_to(secret)
+            with patch("agent.git", return_value="frontend/src/App.tsx"), \
+                 patch("agent.request_model") as model:
+                with self.assertRaises(ValueError):
+                    generate(self.root, ["frontend/src/App.tsx"], "diff", "model")
+            model.assert_not_called()
+
+    def test_oversized_context_is_rejected_instead_of_truncated(self):
+        source = self.root / "backend/app/example.py"
+        source.parent.mkdir(parents=True)
+        source.write_text("x" * 40001)
+        with self.assertRaisesRegex(ValueError, "context exceeds"):
+            collect_context(self.root, ["backend/app/example.py"])
+
     def test_model_budget_is_bounded(self):
         response = {"output": [{"type": "function_call", "name": "read_file", "call_id": "read-1",
                                 "arguments": json.dumps({"path": "backend/app/missing.py"})}]}
@@ -180,6 +223,7 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Ran 2 tests", result.stderr)
         self.assertEqual(saved["skills"], ["analyze-changes", "verify-tests", "backend-tests"])
+        self.assertEqual(saved["context_files"], ["backend/app/calculations.py"])
 
 
 if __name__ == "__main__":
